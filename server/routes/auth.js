@@ -1,29 +1,8 @@
 // routes/yourRouterFile.js
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');  // For hashing passwords
-const connection = require('../db/db'); // Adjust the path as needed
-
-// Registration route
-// router.post('/register', (req, res) => {
-//     const { last_name, first_name, middle_name, email, password, confirm_password } = req.body;
-
-//     if (password !== confirm_password) {
-//         return res.status(400).send('Passwords do not match');
-//     }
-
-//     // Insert new user into the database
-//     connection.query('INSERT INTO user (first_name, last_name, middle_name, email, password) VALUES (?, ?, ?, ?, ?)',
-//         [last_name, first_name, middle_name, email, password],
-//         (err) => {
-//             if (err) {
-//                 console.error('Database query error:', err);
-//                 return res.status(500).send('Error registering user');
-//             }
-//             res.redirect('/login');
-//         }
-//     );
-// });
+const bcrypt = require('bcrypt');
+const connection = require('../db/db');
 
 // Registration route
 router.post('/register', (req, res) => {
