@@ -18,7 +18,7 @@ server.use(session({
 }));
 
 // Routes
-const indexRoutes = require('./server/routes/auth');
+const indexRoutes = require('./server/controller/auth');
 server.use('/auth', indexRoutes);
 
 server.get('/', (req, res) => {

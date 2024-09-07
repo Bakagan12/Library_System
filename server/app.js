@@ -17,7 +17,7 @@ app.use(session({
 }));
 
 // Routes
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./controller/auth');
 app.use('/auth', authRoutes);
 
 // Other routes and fallback
