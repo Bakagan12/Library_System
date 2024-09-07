@@ -1,78 +1,73 @@
-// routes/yourRouterFile.js
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
-const connection = require('../db/db');
+const UserService = require('../services/UserService');
+const UserValidation = require('../validation/UserValidation');
+const session = require('express-session');
+const authenticateSession = require('../middleware/authMiddleware');
+
+// Configure session middleware
+router.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: process.env.NODE_ENV === 'production', sameSite: 'Strict' } // Adjust as needed
+}));
 
 // Registration route
 router.post('/register', (req, res) => {
-    const { last_name, first_name, middle_name, email, password, confirm_password } = req.body;
-
-    if (password !== confirm_password) {
-        return res.status(400).send('Passwords do not match');
+    const validationErrors = UserValidation.validateRegistration(req.body);
+    if (validationErrors.length > 0) {
+        return res.status(400).json({ errors: validationErrors });
     }
 
-    // Hash the password
-    bcrypt.hash(password, 10, (err, hashedPassword) => {
-        if (err) {
-            console.error('Error hashing password:', err);
-            return res.status(500).send('Internal server error');
-        }
-
-        // Insert new user into the database
-        connection.query('INSERT INTO user (first_name, last_name, middle_name, email, password) VALUES (?, ?, ?, ?, ?)',
-            [first_name, last_name, middle_name, email, hashedPassword],
-            (err) => {
-                if (err) {
-                    console.error('Database query error:', err);
-                    return res.status(500).send('Error registering user');
-                }
-                res.redirect('/login');
-            }
-        );
-    });
-});
-
-// Login route
-router.post('/login', (req, res) => {
     const { email, password } = req.body;
 
-    connection.query('SELECT * FROM user WHERE email = ?', [email], (err, results) => {
+    UserService.register(req.body, (err, successMessage) => {
         if (err) {
-            console.error('Database query error:', err);
-            return res.status(500).json({ error: 'Database query failed' });
+            return res.status(400).json({ error: err.message });
         }
-        if (results.length > 0) {
-            // Check password
-            bcrypt.compare(password, results[0].password, (err, isMatch) => {
-                if (err) {
-                    console.error('Error comparing passwords:', err);
-                    return res.status(500).send('Internal server error');
-                }
-                if (isMatch) {
-                    // Password matches
-                    req.session.user = results[0];
-                    res.redirect('/dashboard');
-                } else {
-                    // Invalid credentials
-                    res.status(401).send('Invalid credentials');
-                }
-            });
-        } else {
-            res.status(401).send('Invalid credentials');
+
+        // Automatically log in the user after registration
+        UserService.login(email, password, (err, data) => {
+            if (err) {
+                return res.status(401).json({ error: err.message });
+            }
+
+            // Store user information in session
+            req.session.userId = data.user.id;
+
+            // Redirect to /login
+            res.redirect('/login');
+        });
+    });
+});
+router.get('/logout', (req, res) => {
+    res.redirect('/login');
+});
+// Login route
+// In your route file
+router.post('/login', (req, res) => {
+    const validationErrors = UserValidation.validateLogin(req.body);
+    if (validationErrors.length > 0) {
+        return res.status(400).json({ errors: validationErrors });
+    }
+
+    const { email, password } = req.body;
+
+    UserService.login(email, password, req, (err, data) => {
+        if (err) {
+            return res.status(401).json({ error: err.message });
         }
+
+        // Redirect to /dashboard
+        res.redirect('/dashboard');
     });
 });
 
-// Logout route
-router.get('/logout', (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            console.error('Error destroying session:', err);
-            return res.status(500).send('Internal server error');
-        }
-        res.redirect('/login');
-    });
+
+// Protected route example
+router.get('/dashboard', authenticateSession, (req, res) => {
+    res.sendFile(path.join(__dirname, '../../client/public/views/template/dashboard.html'));
 });
 
 module.exports = router;

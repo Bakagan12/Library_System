@@ -1,40 +1,46 @@
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
-const app = express();
+const server = express();
+const authenticateSession = require('./server/middleware/authMiddleware');
 
-const bodyParser = require('body-parser');  // Ensure body-parser is installed
-
+const bodyParser = require('body-parser');
 
 // Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, '../public'))); // Adjust path if needed
-app.use(session({
+server.use(bodyParser.urlencoded({ extended: true }));
+server.use(bodyParser.json());
+server.use(express.static(path.join(__dirname, 'client/public'))); // Serving static files from 'client/public'
+server.use(session({
     secret: 'your-secret-key',
     resave: false,
     saveUninitialized: true,
+    cookie: { secure: process.env.NODE_ENV === 'production', sameSite: 'Strict' } // Adjust as needed
 }));
-// Middleware for serving static files
-app.use(express.static(path.join(__dirname, 'client/public')));
 
 // Routes
 const indexRoutes = require('./server/routes/auth');
-app.use('/auth', indexRoutes);
+server.use('/auth', indexRoutes);
+
+server.get('/', (req, res) => {
+    res.redirect('/login');
+});
 
 // Fallback route for SPA (Single Page Application)
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/public/views/template/login.html'));
+server.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/public/views/git add template/login.html'));
 });
-app.get('/register', (req, res) => {
+server.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'client/public/views/template/register.html'));
 });
-app.get('/dashboard', (req, res) => {
+server.get('/dashboard', authenticateSession, (req, res) => {
     res.sendFile(path.join(__dirname, 'client/public/views/template/dashboard.html'));
+});
+server.get('/logout', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/public/views/template/login.html'));
 });
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
