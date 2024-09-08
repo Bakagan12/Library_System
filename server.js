@@ -27,7 +27,7 @@ server.get('/', (req, res) => {
 
 // Fallback route for SPA (Single Page Application)
 server.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/public/views/git add template/login.html'));
+    res.sendFile(path.join(__dirname, 'client/public/views/template/login.html'));
 });
 server.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'client/public/views/template/register.html'));
