@@ -26,6 +26,7 @@ class UserService {
 
     static login(email, password, req, callback) {
         UserRepository.findByEmail(email, (err, users) => {
+            const validationErrors = UserValidation.validateRegistration(userData);
             if (err || users.length === 0) {
                 return callback({ message: 'Invalid email or password' });
             }
